@@ -1,0 +1,25 @@
+{
+  "name": "math_paper_llm_auditor",
+  "version": "1.0.0",
+  "description": "CI-ready bundle for LLM-assisted auditing of mathematical writing, citations, and proof rigor.",
+  "bundle": "bundles/math_paper_llm_auditor.bundle.json",
+  "rulesets": [
+    "rules/knuth_math_writing.rules.json",
+    "rules/ieee_acm_citation.rules.json",
+    "rules/theorem_proof_audit.rules.json"
+  ],
+  "schemas": [
+    "schemas/rule_set.schema.json",
+    "schemas/audit_report.schema.json",
+    "schemas/bundle.schema.json"
+  ],
+  "examples": [
+    "examples/sample_audit_report.json",
+    "examples/sample_target_metadata.json"
+  ],
+  "tools": [
+    "tools/validate_bundle.py"
+  ],
+  "ci_workflow": ".github/workflows/ci.yml",
+  "license": "MIT"
+}

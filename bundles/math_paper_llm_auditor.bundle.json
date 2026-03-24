@@ -1,0 +1,831 @@
+{
+  "$schema": "schemas/bundle.schema.json",
+  "bundle_version": "1.0.0",
+  "bundle_id": "math_paper_llm_auditor",
+  "description": "Deployment-ready JSON bundle for LLM-assisted auditing of mathematical papers: (A) Knuth-style math writing rules, (B) IEEE/ACM citation rules, and (C) theorem/proof rigor checks.",
+  "rulesets": [
+    {
+      "ruleset_id": "knuth_math_writing",
+      "path": "rules/knuth_math_writing.rules.json",
+      "embedded": {
+        "$schema": "schemas/rule_set.schema.json",
+        "schema_version": "1.0.0",
+        "ruleset_id": "knuth_math_writing",
+        "title": "Knuth Principles for Mathematical Writing (LLM Audit Rules)",
+        "description": "Practical Knuth-style rules for mathematical prose: sentence starts, adjacent formulas, punctuation with displays, symbol introduction and definition, consistent notation, and reader guidance.",
+        "scope": [
+          "math_prose",
+          "latex",
+          "markdown"
+        ],
+        "strictness_levels": [
+          "lenient",
+          "standard",
+          "strict"
+        ],
+        "default_strictness": "standard",
+        "provenance": {
+          "basis": "User-provided distilled Knuth principles attributed to Donald E. Knuth's mathematical writing guidance.",
+          "curation_date": "2026-03-24"
+        },
+        "rules": [
+          {
+            "id": "KMW-001",
+            "title": "Do not start sentences with bare symbols",
+            "severity": "major",
+            "rationale": "Bare symbolic openings are hard to read and sound abrupt in mathematical prose.",
+            "check": "Flag sentences that begin with math tokens, variables, quantifiers (∀,∃), operators, or displayed math unless the symbol is part of a proper noun or numbered item.",
+            "pass_criteria": "The sentence begins with ordinary language that names or describes the mathematical object.",
+            "exceptions": [
+              "Enumerated algorithmic pseudocode lines rather than prose sentences.",
+              "Display-equation lines that are not sentence starts in the surrounding prose."
+            ],
+            "bad_examples": [
+              "f(x) is continuous on [0,1].",
+              "∀x∈X, there exists y∈Y."
+            ],
+            "good_examples": [
+              "The function f(x) is continuous on [0,1].",
+              "For every x in X, there exists y in Y."
+            ],
+            "fix_template": "Rewrite the sentence so it begins with words naming the object or quantifier domain."
+          },
+          {
+            "id": "KMW-002",
+            "title": "Do not place two formulas adjacent without words between",
+            "severity": "major",
+            "rationale": "Adjacent formulas without connective words are difficult to parse and often ambiguous.",
+            "check": "Flag occurrences of consecutive inline math segments (e.g., $f(x)$ $g(x)$) or symbol clusters where a conjunction/preposition is expected.",
+            "pass_criteria": "Between any two formulas that refer to distinct objects, there are connector words (and, or, implies, such that, of, etc.).",
+            "exceptions": [
+              "Explicit multiplication or function composition expressed in a single formula.",
+              "Tuple/vector notation inside one formula."
+            ],
+            "bad_examples": [
+              "Consider f(x) g(x).",
+              "Let A B be sets."
+            ],
+            "good_examples": [
+              "Consider f(x) and g(x).",
+              "Let A and B be sets."
+            ],
+            "fix_template": "Insert a connective word (e.g., “and”, “of”, “with”, “such that”) between the formulas."
+          },
+          {
+            "id": "KMW-003",
+            "title": "Displayed equations must be grammatically integrated and punctuated",
+            "severity": "major",
+            "rationale": "Displayed equations are part of the sentence; missing punctuation breaks grammar and reader flow.",
+            "check": "Flag displayed equations that are followed by no punctuation when the surrounding prose implies continuation, or that use incorrect punctuation (e.g., trailing colon after verb 'is/are').",
+            "pass_criteria": "Displayed equations end with appropriate punctuation (comma/period/semicolon) matching the sentence structure.",
+            "exceptions": [
+              "Standalone display that is not part of a sentence (rare; should be avoided).",
+              "Numbered equation displayed as a label-only line in some templates (still discouraged)."
+            ],
+            "bad_examples": [
+              "We define\n  x = y + 1\nwhere y > 0",
+              "Then\n  f(x)=0\nand hence ..."
+            ],
+            "good_examples": [
+              "We define\n  x = y + 1,\nwhere y > 0.",
+              "Then\n  f(x)=0,\nand hence ..."
+            ],
+            "fix_template": "Add punctuation to the displayed equation (typically a comma or period) so the paragraph reads as a single grammatical sentence."
+          },
+          {
+            "id": "KMW-004",
+            "title": "Define symbols before (or very near) first use",
+            "severity": "critical",
+            "rationale": "Undefined notation causes misinterpretation and makes proofs unverifiable.",
+            "check": "Flag any symbol that appears without a prior definition in the same section or a clearly stated standing assumptions/notation block.",
+            "pass_criteria": "Every nonstandard symbol is defined at first appearance (or immediately before) with domain/type information if relevant.",
+            "exceptions": [
+              "Truly standard constants (0, 1, π, e) and common sets (ℝ, ℕ) if the venue allows unexpanded use.",
+              "Globally defined notation in a dedicated Notation section."
+            ],
+            "bad_examples": [
+              "Let δ = min(δ1, δ2). (δ1, δ2 never defined.)",
+              "Take x ∈ X0. (X0 never defined.)"
+            ],
+            "good_examples": [
+              "Let δ1, δ2 > 0 be given by continuity of f and g at a, and set δ = min(δ1, δ2).",
+              "Let X0 denote the set of feasible solutions defined in (2.1)."
+            ],
+            "fix_template": "Insert a definition sentence/phrase for the symbol (and its domain) at its first use or move the first use to after the definition."
+          },
+          {
+            "id": "KMW-005",
+            "title": "Use consistent notation and do not reuse symbols for different meanings",
+            "severity": "critical",
+            "rationale": "Symbol reuse breaks logical correctness and proof traceability.",
+            "check": "Flag cases where the same symbol is reintroduced with a new meaning, or where multiple symbols denote the same object without explanation.",
+            "pass_criteria": "Each symbol has exactly one meaning in its scope, and each object has one primary notation (with declared synonyms if needed).",
+            "exceptions": [
+              "Standard dummy indices in summations/integrals with clearly local scope.",
+              "Overloaded notation explicitly declared as such (discouraged)."
+            ],
+            "bad_examples": [
+              "Let G be a graph. ... Let G be a group.",
+              "Let n be the sample size. ... Let n be the normal vector."
+            ],
+            "good_examples": [
+              "Let G be a graph. ... Let H be a group.",
+              "Let n be the sample size. ... Let ν be the normal vector."
+            ],
+            "fix_template": "Rename one of the meanings (choose a new symbol) and propagate consistently through the relevant scope."
+          },
+          {
+            "id": "KMW-006",
+            "title": "Avoid long unconnected sequences of formulas",
+            "severity": "major",
+            "rationale": "Listing formulas without explanatory prose resembles homework and obscures the argument.",
+            "check": "Flag paragraphs with multiple consecutive sentences that are primarily formulas or equation transformations with no explanatory link words.",
+            "pass_criteria": "Formulas are tied together by prose explaining the goal and the reason for each transformation.",
+            "exceptions": [
+              "A short chain of equalities/inequalities with an explicit stated reason.",
+              "Algorithmic derivations where each line is annotated by a justification."
+            ],
+            "bad_examples": [
+              "x=... \ny=... \nz=..."
+            ],
+            "good_examples": [
+              "Starting from x=..., we substitute into the definition of y to obtain y=.... Finally, applying Lemma 2 yields z=...."
+            ],
+            "fix_template": "Insert short prose between formulas indicating the reason (definition, substitution, lemma) and the intermediate goal."
+          },
+          {
+            "id": "KMW-007",
+            "title": "Prefer words over nonstandard symbolic logic in running text",
+            "severity": "minor",
+            "rationale": "Symbols like ∀, ∃, ⇒ are easy to misread in prose and reduce accessibility.",
+            "check": "Flag ∀, ∃, ⇒, ⇔, s.t., w.r.t., iff in prose sentences outside formal logic contexts.",
+            "pass_criteria": "Quantifiers and implications are written in words when embedded in prose.",
+            "exceptions": [
+              "Works explicitly about formal logic where symbols are the subject matter.",
+              "Short summary tables of logical forms (not prose)."
+            ],
+            "bad_examples": [
+              "∀ε>0 ∃δ>0 s.t. ...",
+              "A⇒B⇒C."
+            ],
+            "good_examples": [
+              "For every ε>0 there exists δ>0 such that ...",
+              "We show that A implies B and B implies C."
+            ],
+            "fix_template": "Replace symbolic quantifiers/implications with words in prose; keep symbols inside a displayed formula if needed."
+          },
+          {
+            "id": "KMW-008",
+            "title": "Keep the reader oriented about goals and structure",
+            "severity": "minor",
+            "rationale": "Readers need reminders of what is being proved and why steps are taken.",
+            "check": "Flag long proof stretches (>10 lines/paragraphs) without a stated local goal or without referencing the theorem statement.",
+            "pass_criteria": "Proof includes goal statements at major transitions (e.g., “It remains to show…”, “We now prove…”).",
+            "exceptions": [
+              "Very short proofs where the goal is obvious from immediate context.",
+              "Highly routine calculations with explicit displayed derivations."
+            ],
+            "bad_examples": [
+              "Several paragraphs of computation with no statement of what is being established."
+            ],
+            "good_examples": [
+              "To conclude the theorem, it suffices to show that the error term tends to zero."
+            ],
+            "fix_template": "Add a one-sentence roadmap at transition points describing the subgoal and how it connects to the main claim."
+          },
+          {
+            "id": "KMW-009",
+            "title": "Use complete English sentences around math",
+            "severity": "minor",
+            "rationale": "Sentence fragments around formulas introduce ambiguity and grammatical breaks.",
+            "check": "Flag fragments like “Since …” followed by a display with no main verb, or displays introduced by incorrect punctuation (e.g., random colon).",
+            "pass_criteria": "Each paragraph reads as grammatical English when formulas are read aloud.",
+            "exceptions": [
+              "Bulleted lists explicitly labeled as fragments.",
+              "Caption-style text in figures/tables."
+            ],
+            "bad_examples": [
+              "Since x>0.\n  x^2>0.",
+              "If C and P are subsets of N^n, let:\n  L(C,P)=..."
+            ],
+            "good_examples": [
+              "Since x>0, we have x^2>0.",
+              "If C and P are subsets of N^n, let L(C,P) denote ..."
+            ],
+            "fix_template": "Rewrite fragments into full sentences; adjust punctuation so the display is a grammatical clause of the sentence."
+          },
+          {
+            "id": "KMW-010",
+            "title": "Capitalize 'Theorem', 'Lemma', etc. when used as labeled nouns",
+            "severity": "info",
+            "rationale": "Consistent capitalization improves professional readability and aligns with many editorial norms.",
+            "check": "Flag patterns like “theorem 2” or “lemma 5” when they refer to a labeled result.",
+            "pass_criteria": "Use “Theorem 2”, “Lemma 5”, “Proposition 3.1” when referring to numbered items.",
+            "exceptions": [
+              "Generic usage: “a theorem of algebra” is not capitalized."
+            ],
+            "bad_examples": [
+              "As shown in theorem 2, ...",
+              "lemma 5 implies ..."
+            ],
+            "good_examples": [
+              "As shown in Theorem 2, ...",
+              "Lemma 5 implies ..."
+            ],
+            "fix_template": "Capitalize the noun when it refers to a labeled result (Theorem/Lemma/Proposition/Corollary/Definition)."
+          },
+          {
+            "id": "KMW-011",
+            "title": "Avoid gratuitous colons before displays",
+            "severity": "minor",
+            "rationale": "Colons are often misused before displayed equations and can create ungrammatical sentences.",
+            "check": "Flag occurrences like “We have:” or “Let:” immediately before a display when the display merely completes the clause.",
+            "pass_criteria": "Use a colon only when introducing a list or explanation; otherwise treat the display as a continuation without punctuation after forms of 'to be'.",
+            "exceptions": [
+              "Legitimate list introductions: “as follows:” followed by a list of items.",
+              "Algorithm blocks introduced by “Algorithm:” in some venues."
+            ],
+            "bad_examples": [
+              "We have:\n  x = y + 1.",
+              "If C and P are subsets of N^n, let:\n  L(C,P)=..."
+            ],
+            "good_examples": [
+              "We have\n  x = y + 1.",
+              "If C and P are subsets of N^n, let L(C,P) be defined by\n  L(C,P)=..."
+            ],
+            "fix_template": "Remove the colon and rewrite so the displayed equation completes a grammatical sentence."
+          },
+          {
+            "id": "KMW-012",
+            "title": "Minimize symbol-heavy prose when words are clearer",
+            "severity": "info",
+            "rationale": "Symbol-dense prose is cognitively expensive and increases scope ambiguity.",
+            "check": "Flag passages with many quantifier/logic symbols in running text outside displayed formulas.",
+            "pass_criteria": "Use words for quantifiers and logical connectors in prose; reserve dense notation for displays.",
+            "exceptions": [
+              "Formal logic, proof theory, or papers where symbolic logic is the object of study."
+            ],
+            "bad_examples": [
+              "∀ε>0 ∃δ>0: |x-a|<δ ⇒ |f(x)-f(a)|<ε."
+            ],
+            "good_examples": [
+              "For every ε>0 there exists δ>0 such that if |x-a|<δ then |f(x)-f(a)|<ε."
+            ],
+            "fix_template": "Move the dense symbolic statement into a display or rewrite it in words in running text."
+          }
+        ]
+      }
+    },
+    {
+      "ruleset_id": "ieee_acm_citation",
+      "path": "rules/ieee_acm_citation.rules.json",
+      "embedded": {
+        "$schema": "schemas/rule_set.schema.json",
+        "schema_version": "1.0.0",
+        "ruleset_id": "ieee_acm_citation",
+        "title": "IEEE and ACM Citation Rules (LLM Audit Rules)",
+        "description": "Practical checks to validate IEEE and ACM reference/citation conformance: numeric bracket citations, ordering/numbering constraints, DOI/URL expectations, and prose conventions around citations.",
+        "scope": [
+          "citations",
+          "bibliography",
+          "latex",
+          "word"
+        ],
+        "strictness_levels": [
+          "lenient",
+          "standard",
+          "strict"
+        ],
+        "default_strictness": "standard",
+        "provenance": {
+          "curation_date": "2026-03-24",
+          "sources": [
+            {
+              "style": "IEEE",
+              "source_name": "IEEE Editorial Style Manual for Authors",
+              "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/IEEE-Editorial-Style-Manual-for-Authors.pdf"
+            },
+            {
+              "style": "IEEE",
+              "source_name": "IEEE template instructions on references and citations",
+              "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/Trans_Magnetics_instructions2.pdf"
+            },
+            {
+              "style": "IEEE",
+              "source_name": "IEEE Editing Mathematics guidance",
+              "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/Editing-Mathematics.pdf"
+            },
+            {
+              "style": "ACM",
+              "source_name": "ACM Citation Style and Reference Formats",
+              "url": "https://www.acm.org/publications/authors/reference-formatting"
+            },
+            {
+              "style": "ACM",
+              "source_name": "acmart documentation",
+              "url": "https://portalparts.acm.org/hippo/latex_templates/acmart.pdf"
+            },
+            {
+              "style": "ACM",
+              "source_name": "ACM Word template guidance",
+              "url": "https://www.acm.org/binaries/content/assets/publications/article-templates/pubform.docx"
+            }
+          ]
+        },
+        "venue_profiles": [
+          "IEEE",
+          "ACM"
+        ],
+        "rules": [
+          {
+            "id": "CIT-COMMON-001",
+            "applies_to": [
+              "IEEE",
+              "ACM"
+            ],
+            "title": "Every in-text citation must have a matching reference entry",
+            "severity": "critical",
+            "rationale": "Missing bibliography entries break traceability and can be grounds for rejection or major revision.",
+            "check": "Flag any in-text numeric citation (e.g., [12]) whose number is not present as a leading reference label in the reference list.",
+            "pass_criteria": "All in-text citation numbers correspond to an entry in the reference list.",
+            "exceptions": [
+              "Draft manuscripts where references are intentionally omitted (must be explicitly indicated)."
+            ],
+            "fix_template": "Add the missing reference entry or remove/replace the in-text citation."
+          },
+          {
+            "id": "CIT-COMMON-002",
+            "applies_to": [
+              "IEEE",
+              "ACM"
+            ],
+            "title": "Every reference entry must be cited in the text",
+            "severity": "major",
+            "rationale": "Uncited references are often disallowed or indicate sloppy citation management.",
+            "check": "Flag reference-list entries whose index never appears as an in-text citation.",
+            "pass_criteria": "All reference entries are cited at least once in the body, captions, or appendices as allowed by the venue.",
+            "exceptions": [
+              "Bibliographies used as background reading lists (rare; must be labeled as such)."
+            ],
+            "fix_template": "Either cite the reference where relevant or remove it from the reference list."
+          },
+          {
+            "id": "CIT-IEEE-001",
+            "applies_to": [
+              "IEEE"
+            ],
+            "title": "IEEE uses one reference number per distinct reference entry",
+            "severity": "critical",
+            "rationale": "IEEE forbids grouping multiple references under one reference number.",
+            "check": "Flag any single reference number that contains multiple independent sources separated by semicolons or multiple publisher/year patterns.",
+            "pass_criteria": "Each distinct source has its own reference number entry.",
+            "exceptions": [
+              "One source with multiple parts/chapters is cited as one entry with in-text pinpoint locators."
+            ],
+            "fix_template": "Split the grouped reference into multiple numbered entries and renumber citations accordingly."
+          },
+          {
+            "id": "CIT-IEEE-002",
+            "applies_to": [
+              "IEEE"
+            ],
+            "title": "Do not write 'in reference [n]' mid-sentence; use 'in [n]'",
+            "severity": "major",
+            "rationale": "IEEE editorial guidance prefers concise numeric citation prose.",
+            "check": "Flag phrases matching /in\\s+reference\\s+\\[\\d+\\]/ or /in\\s+Ref\\.?\\s*\\[\\d+\\]/.",
+            "pass_criteria": "Use the form “in [n] …” (and omit author name with the bracket number unless necessary).",
+            "exceptions": [
+              "If the sentence begins with “Reference [n] ...” and cannot be rewritten.",
+              "If author name is integral to meaning (rare)."
+            ],
+            "fix_template": "Rewrite the clause so it reads “in [n] …” or restructure the sentence to avoid “reference”."
+          },
+          {
+            "id": "CIT-IEEE-003",
+            "applies_to": [
+              "IEEE"
+            ],
+            "title": "Use IEEE cross-reference notation for pinpointing figures/equations/sections",
+            "severity": "major",
+            "rationale": "IEEE specifies bracketed cross-reference notation such as [1, Fig. 2] and [1, eq. (8)].",
+            "check": "Flag phrases like “Fig. 2 of reference [n]” or “equation (8) of reference [n]”.",
+            "pass_criteria": "Use IEEE cross-reference notation: [n, Fig. 2], [n, eq. (8)], [n, Sec. IV], etc.",
+            "exceptions": [
+              "Venues within IEEE that explicitly override this detail (rare)."
+            ],
+            "fix_template": "Replace with the IEEE bracket cross-reference format, e.g., “in [n, Fig. 2]”."
+          },
+          {
+            "id": "CIT-IEEE-004",
+            "applies_to": [
+              "IEEE"
+            ],
+            "title": "Do not allocate multiple reference numbers to different parts of the same source",
+            "severity": "major",
+            "rationale": "IEEE prefers a single reference entry for a source, with in-text pinpointing for pages/sections/etc.",
+            "check": "Flag repeated identical author/title/year sources appearing as separate reference-list entries with different numbers.",
+            "pass_criteria": "One source appears once in the reference list; in-text cites use locators like [n, Ch. 3] as needed.",
+            "exceptions": [
+              "Materially distinct editions or translations; then treat as distinct sources."
+            ],
+            "fix_template": "Merge duplicate entries into one and update in-text citations to pinpoint the relevant location."
+          },
+          {
+            "id": "CIT-IEEE-005",
+            "applies_to": [
+              "IEEE"
+            ],
+            "title": "Reference numbering should match IEEE numeric system conventions",
+            "severity": "minor",
+            "rationale": "IEEE systems typically expect stable numeric numbering; renumbering needs consistency.",
+            "check": "Flag inconsistent or non-numeric reference labels (e.g., [A], [B]) unless the venue profile allows it.",
+            "pass_criteria": "References are numbered with Arabic numerals in brackets.",
+            "exceptions": [
+              "Venue-specific overrides (e.g., magazine formats)."
+            ],
+            "fix_template": "Convert reference labels to numeric bracketed form consistent across text and reference list."
+          },
+          {
+            "id": "CIT-ACM-001",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "ACM in-text citations are numeric in square brackets",
+            "severity": "critical",
+            "rationale": "ACM's reference-formatting guidance specifies numeric bracketed citations (e.g., [1]).",
+            "check": "Flag non-numeric citation systems (author-year parentheses, footnote-only citations) when ACM profile is selected.",
+            "pass_criteria": "In-text citations appear as [n] or [n, m] for multiple citations.",
+            "exceptions": [
+              "acmart author-year mode explicitly enabled (then check author-year format instead)."
+            ],
+            "fix_template": "Switch to ACM numeric citation mode or enable and consistently use acmart author-year mode."
+          },
+          {
+            "id": "CIT-ACM-002",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "Use ACM Reference Format; nonconforming references may be returned",
+            "severity": "major",
+            "rationale": "ACM explicitly warns that papers may be returned for proper formatting if references do not adhere.",
+            "check": "Flag mixed reference styles (e.g., APA-like entries) that deviate from ACM examples, especially missing required fields like venue, pages, and DOI when available.",
+            "pass_criteria": "Reference list matches ACM Reference Format for each entry type.",
+            "exceptions": [
+              "Pre-submission drafts where references are not yet finalized (must be marked)."
+            ],
+            "fix_template": "Regenerate the bibliography using ACM-Reference-Format.bst (BibTeX) or the ACM BibLaTeX setup and correct missing fields."
+          },
+          {
+            "id": "CIT-ACM-003",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "Prefer DOIs over URLs when both exist",
+            "severity": "major",
+            "rationale": "ACM guidance prefers DOIs because URLs are not permanent.",
+            "check": "Flag references that include only a URL when a DOI is known or easily discoverable (common for journal/conference papers).",
+            "pass_criteria": "If a DOI exists, include it; suppress raw URLs unless a distinct URL is required.",
+            "exceptions": [
+              "No DOI exists (web pages, some technical reports).",
+              "A distinct URL is needed in addition to DOI (use distinctURL/archived mechanisms where supported)."
+            ],
+            "fix_template": "Add the DOI field; if needed, keep URL with lastaccessed/archived metadata."
+          },
+          {
+            "id": "CIT-ACM-004",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "For web sources, include access date and archival link when feasible",
+            "severity": "minor",
+            "rationale": "acmart supports lastaccessed and archived fields to mitigate stale links and content drift.",
+            "check": "Flag @online or URL-only references without lastaccessed date; flag missing archived links for unstable web content.",
+            "pass_criteria": "Web resources include lastaccessed and, when available, an archived snapshot link.",
+            "exceptions": [
+              "Stable DOI-resolvable resources.",
+              "Publisher-hosted PDFs with long-term stability guarantees (still optional)."
+            ],
+            "fix_template": "Add lastaccessed = {Month Day, Year} and archived = {Wayback snapshot URL} when possible."
+          },
+          {
+            "id": "CIT-ACM-005",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "ACM prefers full author names (not initials) in references",
+            "severity": "minor",
+            "rationale": "ACM explicitly prefers full names to facilitate indexing and citation linking.",
+            "check": "Flag references where authors are given only as initials when ACM examples show full names.",
+            "pass_criteria": "Author names are listed as full given names where available (BibTeX entries should include them).",
+            "exceptions": [
+              "Authors who publish under initials or have unknown given names.",
+              "Legacy metadata where full names are unavailable."
+            ],
+            "fix_template": "Replace initials with full given names as in ACM examples or ensure the .bib metadata contains full names."
+          },
+          {
+            "id": "CIT-ACM-006",
+            "applies_to": [
+              "ACM"
+            ],
+            "title": "acmart numeric citations are the default; ensure consistency with selected mode",
+            "severity": "minor",
+            "rationale": "acmart supports both numeric and author-year; inconsistent use leads to processing delays.",
+            "check": "Flag mixed citation modes (some [n], some (Author, Year)) in the same manuscript.",
+            "pass_criteria": "Exactly one citation mode is used consistently across the paper.",
+            "exceptions": [
+              "Explicitly permitted hybrid conventions by a specific ACM venue (rare)."
+            ],
+            "fix_template": "Choose either numeric (default) or author-year (\u005ccitestyle{acmauthoryear}) and regenerate the bibliography."
+          }
+        ]
+      }
+    },
+    {
+      "ruleset_id": "theorem_proof_audit",
+      "path": "rules/theorem_proof_audit.rules.json",
+      "embedded": {
+        "$schema": "schemas/rule_set.schema.json",
+        "schema_version": "1.0.0",
+        "ruleset_id": "theorem_proof_audit",
+        "title": "Strict Theorem-and-Proof Rigor Audit Rules",
+        "description": "Strict rules for mathematical correctness auditing: hypotheses, quantifiers, scope, proof structure, justification, case completeness, and conclusion matching.",
+        "scope": [
+          "theorems",
+          "proofs",
+          "appendices"
+        ],
+        "strictness_levels": [
+          "standard",
+          "strict",
+          "very_strict"
+        ],
+        "default_strictness": "strict",
+        "provenance": {
+          "basis": "Curated engineering rules for formal math auditing; similar in spirit to proof-checking checklists, but aimed at mathematical validity.",
+          "curation_date": "2026-03-24"
+        },
+        "rules": [
+          {
+            "id": "TPA-001",
+            "title": "State all hypotheses explicitly",
+            "severity": "critical",
+            "check": "Flag theorem statements whose conclusions rely on unstated assumptions: topology, boundary conditions, initialization, or parameter ranges.",
+            "pass_criteria": "All assumptions needed by the proof are stated in the theorem/lemma statement, the local setup, or an explicitly inherited standing assumptions block.",
+            "failure_modes": [
+              "Hidden compactness assumption",
+              "Undefined domain of variables",
+              "Regularity used later but absent from the statement"
+            ],
+            "fix_template": "Add the missing assumptions to the theorem statement or explicitly cite standing assumptions."
+          },
+          {
+            "id": "TPA-002",
+            "title": "Quantifiers and domains must be explicit",
+            "severity": "critical",
+            "check": "Flag free variables, ambiguous quantifier order, or missing domains in theorem statements and proof steps.",
+            "pass_criteria": "Every variable is bound or declared, and quantifier order matches the intended claim.",
+            "failure_modes": [
+              "For every/there exists reversal",
+              "x appears with no domain",
+              "Ambiguous big-O quantifiers"
+            ],
+            "fix_template": "Rewrite the statement to make all quantifiers and domains explicit (e.g., “for all x∈X” / “there exists δ>0”)."
+          },
+          {
+            "id": "TPA-003",
+            "title": "No undefined objects inside proofs",
+            "severity": "critical",
+            "check": "Flag objects introduced without definition: operators, norms, measures, constants, or sets.",
+            "pass_criteria": "Each object introduced is defined with enough detail to make subsequent steps checkable.",
+            "failure_modes": [
+              "Using an operator T without specifying its domain/codomain",
+              "Introducing a constant C without stating dependence"
+            ],
+            "fix_template": "Define the object when introduced (domain/codomain/assumptions), or cite where it was defined."
+          },
+          {
+            "id": "TPA-004",
+            "title": "Proof must close exactly the stated claim",
+            "severity": "critical",
+            "check": "Compare the final line of the proof to the theorem claim and flag partial, stronger, weaker, or shifted conclusions.",
+            "pass_criteria": "The proof closes the exact theorem claim under the stated assumptions.",
+            "failure_modes": [
+              "Proof shows a weaker bound",
+              "Only one implication proved",
+              "Special case proved instead of general claim"
+            ],
+            "fix_template": "Either strengthen the proof or weaken the theorem statement to what is actually proved."
+          },
+          {
+            "id": "TPA-005",
+            "title": "Every nontrivial inference step must be justified",
+            "severity": "critical",
+            "check": "Flag leaps using therefore, hence, thus, implies, or 'it follows' where justification is absent and not standard from the immediately preceding line.",
+            "pass_criteria": "Each nontrivial step cites a theorem, lemma, definition, inequality, algebraic manipulation, or clearly checkable argument.",
+            "failure_modes": [
+              "Magic inequality jump",
+              "Exchange of limit and integral with no theorem",
+              "Changing optimization order silently"
+            ],
+            "fix_template": "Add the missing justification or split the leap into smaller verified steps."
+          },
+          {
+            "id": "TPA-006",
+            "title": "Avoid variable capture and scope errors",
+            "severity": "critical",
+            "check": "Flag reuse of the same symbol for different instantiated objects within overlapping scope; flag variables that escape their quantifier scope.",
+            "pass_criteria": "Bound variables remain local; newly instantiated objects get fresh names; reused dummy indices are confined to local formulas.",
+            "failure_modes": [
+              "Using k for two different existentials",
+              "Treating a bound variable as globally fixed",
+              "Dependent choices treated as independent"
+            ],
+            "fix_template": "Rename variables to avoid clashes and restate the instantiation step explicitly."
+          },
+          {
+            "id": "TPA-007",
+            "title": "Existence proofs must not assume the object being proved",
+            "severity": "critical",
+            "check": "Flag “let x be such that …” when the existence of x is the conclusion, not a hypothesis.",
+            "pass_criteria": "Existence is established by construction or by citing an existence theorem; then the object is named.",
+            "failure_modes": [
+              "Circular existence",
+              "Assuming maximizer exists without compactness/coercivity"
+            ],
+            "fix_template": "Either construct the object or cite the theorem that guarantees existence before introducing the symbol."
+          },
+          {
+            "id": "TPA-008",
+            "title": "Case splits must be exhaustive and clearly structured",
+            "severity": "major",
+            "check": "Flag proofs that say “consider cases” without stating all cases or without showing they cover all possibilities.",
+            "pass_criteria": "Cases cover the entire domain and are either disjoint or overlap handled explicitly.",
+            "failure_modes": [
+              "Missing boundary case",
+              "Overlapping cases causing double counting",
+              "Case structure not connected to the goal"
+            ],
+            "fix_template": "List the cases explicitly and add a one-line argument that they cover all possibilities."
+          },
+          {
+            "id": "TPA-009",
+            "title": "Induction proofs must include base case and induction step",
+            "severity": "critical",
+            "check": "Flag induction proofs missing base case(s), missing induction hypothesis, or unclear induction variable domain.",
+            "pass_criteria": "Base case(s) verified; induction hypothesis stated; induction step proved; conclusion applies to intended domain.",
+            "failure_modes": [
+              "Induction starts at wrong n",
+              "Strong induction used without stating range",
+              "Using IH for k+1"
+            ],
+            "fix_template": "Add explicit base case, IH, and step; clarify whether induction is weak/strong and the starting index."
+          },
+          {
+            "id": "TPA-010",
+            "title": "Proof by contradiction must exhibit a clear contradiction",
+            "severity": "major",
+            "check": "Flag contradiction proofs that never state an explicit false statement or that end with 'contradiction' without identifying it.",
+            "pass_criteria": "The negation is assumed; a concrete contradiction (C and not C, or an explicitly false inequality) is derived.",
+            "failure_modes": [
+              "Contradiction is asserted but not shown",
+              "Assumed negation not clearly stated"
+            ],
+            "fix_template": "State the assumed negation explicitly and identify the precise contradictory statements at the end."
+          },
+          {
+            "id": "TPA-011",
+            "title": "Iff / equivalence proofs must prove both directions",
+            "severity": "critical",
+            "check": "Flag claims of equivalence with only one implication proved or the reverse direction missing.",
+            "pass_criteria": "Both P⇒Q and Q⇒P are proved (or an equivalent characterization is established).",
+            "failure_modes": [
+              "Only sufficiency proved",
+              "Only necessity proved"
+            ],
+            "fix_template": "Add the missing direction in a separate paragraph or restructure as two implications."
+          },
+          {
+            "id": "TPA-012",
+            "title": "Avoid 'obvious/clearly/trivial' without explanation",
+            "severity": "minor",
+            "check": "Flag words: obvious, clearly, trivial, immediate, evident when used to replace reasoning.",
+            "pass_criteria": "If such words are used, a short reason follows, or the word is removed.",
+            "exceptions": [
+              "Very standard algebraic step with a cited lemma or definition",
+              "Venue where such phrasing is explicitly acceptable (still discouraged)"
+            ],
+            "fix_template": "Delete the word or add a short justification sentence (1–2 lines)."
+          },
+          {
+            "id": "TPA-013",
+            "title": "Proof should indicate where hypotheses are used",
+            "severity": "minor",
+            "check": "Flag long proofs where assumptions appear in statement but are never referenced or used in reasoning.",
+            "pass_criteria": "Major assumptions are invoked at least once in the proof, or explicitly stated as unused/redundant.",
+            "failure_modes": [
+              "Redundant hypothesis not identified",
+              "Hypothesis used implicitly but never mentioned"
+            ],
+            "fix_template": "Insert a sentence indicating where each key hypothesis is applied, or remove redundant hypotheses."
+          },
+          {
+            "id": "TPA-014",
+            "title": "No silent strengthening/weakening of quantifiers in proof",
+            "severity": "critical",
+            "check": "Flag steps that change “for all” to “for some”, or replace arbitrary element with a special one without justification.",
+            "pass_criteria": "Quantifier changes are explicitly justified (e.g., choose a generic element, then fix it).",
+            "failure_modes": [
+              "Choosing a convenient x without loss justification",
+              "Proving existence for a specific parameter rather than arbitrary"
+            ],
+            "fix_template": "Restate the quantifier structure and ensure the proof introduces elements in the correct order (generic then specific)."
+          },
+          {
+            "id": "TPA-015",
+            "title": "Equality/inequality chains must be logically annotated when nontrivial",
+            "severity": "major",
+            "check": "Flag long chains of equalities/inequalities without stating which theorem or property justifies each step, especially when steps are not algebraic identities.",
+            "pass_criteria": "Nontrivial steps cite the reason (monotonicity, Jensen, triangle inequality, dominated convergence, etc.).",
+            "failure_modes": [
+              "Hidden application of Cauchy-Schwarz",
+              "Measure-theoretic limit step with no condition"
+            ],
+            "fix_template": "Break the chain and annotate each nontrivial transformation with the justification."
+          },
+          {
+            "id": "TPA-016",
+            "title": "Definitions must precede the theorems that use them",
+            "severity": "major",
+            "check": "Flag theorems using a defined term that has not been defined yet in the document order.",
+            "pass_criteria": "All nonstandard terms are defined before first usage in theorem statements; if deferred, a Notation/Preliminaries section is referenced explicitly.",
+            "failure_modes": [
+              "Using 'coercive' without definition/context",
+              "Using 'admissible' without stating admissibility conditions"
+            ],
+            "fix_template": "Move the definition earlier or add a forward reference to the Notation section and ensure it exists."
+          },
+          {
+            "id": "TPA-017",
+            "title": "Uniqueness language requires proof of uniqueness",
+            "severity": "major",
+            "check": "Flag usage of “the solution”, “the minimizer”, “the fixed point” when uniqueness has not been proved.",
+            "pass_criteria": "Use “a” unless uniqueness is established or cited.",
+            "failure_modes": [
+              "Referring to 'the optimal solution' without uniqueness",
+              "Implied uniqueness via notation"
+            ],
+            "fix_template": "Change “the” → “an” or add a uniqueness argument/citation."
+          },
+          {
+            "id": "TPA-018",
+            "title": "Avoid mixing informal commentary into the proof body",
+            "severity": "minor",
+            "check": "Flag paragraphs inside proofs that indicate motivation/handwaving without labeling (e.g., “intuitively”, “we guess”, “it seems”).",
+            "pass_criteria": "Clearly separate rigorous argument from commentary via 'Remark', 'Idea of proof', or explicit labels.",
+            "exceptions": [
+              "Proof sketch sections clearly labeled as sketches."
+            ],
+            "fix_template": "Move commentary into a Remark/Discussion or label it explicitly as a sketch; keep the proof body rigorous."
+          }
+        ]
+      }
+    }
+  ],
+  "schemas": [
+    "schemas/rule_set.schema.json",
+    "schemas/audit_report.schema.json",
+    "schemas/bundle.schema.json"
+  ],
+  "defaults": {
+    "recommended_rulesets_by_task": {
+      "math_writing": [
+        "knuth_math_writing"
+      ],
+      "citation_check_ieee": [
+        "ieee_acm_citation"
+      ],
+      "citation_check_acm": [
+        "ieee_acm_citation"
+      ],
+      "theorem_proof_check": [
+        "knuth_math_writing",
+        "theorem_proof_audit"
+      ],
+      "full_paper_check_ieee": [
+        "knuth_math_writing",
+        "ieee_acm_citation",
+        "theorem_proof_audit"
+      ],
+      "full_paper_check_acm": [
+        "knuth_math_writing",
+        "ieee_acm_citation",
+        "theorem_proof_audit"
+      ]
+    },
+    "severity_policy": {
+      "fail_if_any_critical": true,
+      "pass_with_warnings_if_major_or_minor_only": true
+    }
+  }
+}

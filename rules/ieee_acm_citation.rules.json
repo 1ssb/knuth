@@ -1,0 +1,261 @@
+{
+  "$schema": "schemas/rule_set.schema.json",
+  "schema_version": "1.0.0",
+  "ruleset_id": "ieee_acm_citation",
+  "title": "IEEE and ACM Citation Rules (LLM Audit Rules)",
+  "description": "Practical checks to validate IEEE and ACM reference/citation conformance: numeric bracket citations, ordering/numbering constraints, DOI/URL expectations, and prose conventions around citations.",
+  "scope": [
+    "citations",
+    "bibliography",
+    "latex",
+    "word"
+  ],
+  "strictness_levels": [
+    "lenient",
+    "standard",
+    "strict"
+  ],
+  "default_strictness": "standard",
+  "provenance": {
+    "curation_date": "2026-03-24",
+    "sources": [
+      {
+        "style": "IEEE",
+        "source_name": "IEEE Editorial Style Manual for Authors",
+        "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/IEEE-Editorial-Style-Manual-for-Authors.pdf"
+      },
+      {
+        "style": "IEEE",
+        "source_name": "IEEE template instructions on references and citations",
+        "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/Trans_Magnetics_instructions2.pdf"
+      },
+      {
+        "style": "IEEE",
+        "source_name": "IEEE Editing Mathematics guidance",
+        "url": "https://journals.ieeeauthorcenter.ieee.org/wp-content/uploads/sites/7/Editing-Mathematics.pdf"
+      },
+      {
+        "style": "ACM",
+        "source_name": "ACM Citation Style and Reference Formats",
+        "url": "https://www.acm.org/publications/authors/reference-formatting"
+      },
+      {
+        "style": "ACM",
+        "source_name": "acmart documentation",
+        "url": "https://portalparts.acm.org/hippo/latex_templates/acmart.pdf"
+      },
+      {
+        "style": "ACM",
+        "source_name": "ACM Word template guidance",
+        "url": "https://www.acm.org/binaries/content/assets/publications/article-templates/pubform.docx"
+      }
+    ]
+  },
+  "venue_profiles": [
+    "IEEE",
+    "ACM"
+  ],
+  "rules": [
+    {
+      "id": "CIT-COMMON-001",
+      "applies_to": [
+        "IEEE",
+        "ACM"
+      ],
+      "title": "Every in-text citation must have a matching reference entry",
+      "severity": "critical",
+      "rationale": "Missing bibliography entries break traceability and can be grounds for rejection or major revision.",
+      "check": "Flag any in-text numeric citation (e.g., [12]) whose number is not present as a leading reference label in the reference list.",
+      "pass_criteria": "All in-text citation numbers correspond to an entry in the reference list.",
+      "exceptions": [
+        "Draft manuscripts where references are intentionally omitted (must be explicitly indicated)."
+      ],
+      "fix_template": "Add the missing reference entry or remove/replace the in-text citation."
+    },
+    {
+      "id": "CIT-COMMON-002",
+      "applies_to": [
+        "IEEE",
+        "ACM"
+      ],
+      "title": "Every reference entry must be cited in the text",
+      "severity": "major",
+      "rationale": "Uncited references are often disallowed or indicate sloppy citation management.",
+      "check": "Flag reference-list entries whose index never appears as an in-text citation.",
+      "pass_criteria": "All reference entries are cited at least once in the body, captions, or appendices as allowed by the venue.",
+      "exceptions": [
+        "Bibliographies used as background reading lists (rare; must be labeled as such)."
+      ],
+      "fix_template": "Either cite the reference where relevant or remove it from the reference list."
+    },
+    {
+      "id": "CIT-IEEE-001",
+      "applies_to": [
+        "IEEE"
+      ],
+      "title": "IEEE uses one reference number per distinct reference entry",
+      "severity": "critical",
+      "rationale": "IEEE forbids grouping multiple references under one reference number.",
+      "check": "Flag any single reference number that contains multiple independent sources separated by semicolons or multiple publisher/year patterns.",
+      "pass_criteria": "Each distinct source has its own reference number entry.",
+      "exceptions": [
+        "One source with multiple parts/chapters is cited as one entry with in-text pinpoint locators."
+      ],
+      "fix_template": "Split the grouped reference into multiple numbered entries and renumber citations accordingly."
+    },
+    {
+      "id": "CIT-IEEE-002",
+      "applies_to": [
+        "IEEE"
+      ],
+      "title": "Do not write 'in reference [n]' mid-sentence; use 'in [n]'",
+      "severity": "major",
+      "rationale": "IEEE editorial guidance prefers concise numeric citation prose.",
+      "check": "Flag phrases matching /in\\s+reference\\s+\\[\\d+\\]/ or /in\\s+Ref\\.?\\s*\\[\\d+\\]/.",
+      "pass_criteria": "Use the form “in [n] …” (and omit author name with the bracket number unless necessary).",
+      "exceptions": [
+        "If the sentence begins with “Reference [n] ...” and cannot be rewritten.",
+        "If author name is integral to meaning (rare)."
+      ],
+      "fix_template": "Rewrite the clause so it reads “in [n] …” or restructure the sentence to avoid “reference”."
+    },
+    {
+      "id": "CIT-IEEE-003",
+      "applies_to": [
+        "IEEE"
+      ],
+      "title": "Use IEEE cross-reference notation for pinpointing figures/equations/sections",
+      "severity": "major",
+      "rationale": "IEEE specifies bracketed cross-reference notation such as [1, Fig. 2] and [1, eq. (8)].",
+      "check": "Flag phrases like “Fig. 2 of reference [n]” or “equation (8) of reference [n]”.",
+      "pass_criteria": "Use IEEE cross-reference notation: [n, Fig. 2], [n, eq. (8)], [n, Sec. IV], etc.",
+      "exceptions": [
+        "Venues within IEEE that explicitly override this detail (rare)."
+      ],
+      "fix_template": "Replace with the IEEE bracket cross-reference format, e.g., “in [n, Fig. 2]”."
+    },
+    {
+      "id": "CIT-IEEE-004",
+      "applies_to": [
+        "IEEE"
+      ],
+      "title": "Do not allocate multiple reference numbers to different parts of the same source",
+      "severity": "major",
+      "rationale": "IEEE prefers a single reference entry for a source, with in-text pinpointing for pages/sections/etc.",
+      "check": "Flag repeated identical author/title/year sources appearing as separate reference-list entries with different numbers.",
+      "pass_criteria": "One source appears once in the reference list; in-text cites use locators like [n, Ch. 3] as needed.",
+      "exceptions": [
+        "Materially distinct editions or translations; then treat as distinct sources."
+      ],
+      "fix_template": "Merge duplicate entries into one and update in-text citations to pinpoint the relevant location."
+    },
+    {
+      "id": "CIT-IEEE-005",
+      "applies_to": [
+        "IEEE"
+      ],
+      "title": "Reference numbering should match IEEE numeric system conventions",
+      "severity": "minor",
+      "rationale": "IEEE systems typically expect stable numeric numbering; renumbering needs consistency.",
+      "check": "Flag inconsistent or non-numeric reference labels (e.g., [A], [B]) unless the venue profile allows it.",
+      "pass_criteria": "References are numbered with Arabic numerals in brackets.",
+      "exceptions": [
+        "Venue-specific overrides (e.g., magazine formats)."
+      ],
+      "fix_template": "Convert reference labels to numeric bracketed form consistent across text and reference list."
+    },
+    {
+      "id": "CIT-ACM-001",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "ACM in-text citations are numeric in square brackets",
+      "severity": "critical",
+      "rationale": "ACM's reference-formatting guidance specifies numeric bracketed citations (e.g., [1]).",
+      "check": "Flag non-numeric citation systems (author-year parentheses, footnote-only citations) when ACM profile is selected.",
+      "pass_criteria": "In-text citations appear as [n] or [n, m] for multiple citations.",
+      "exceptions": [
+        "acmart author-year mode explicitly enabled (then check author-year format instead)."
+      ],
+      "fix_template": "Switch to ACM numeric citation mode or enable and consistently use acmart author-year mode."
+    },
+    {
+      "id": "CIT-ACM-002",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "Use ACM Reference Format; nonconforming references may be returned",
+      "severity": "major",
+      "rationale": "ACM explicitly warns that papers may be returned for proper formatting if references do not adhere.",
+      "check": "Flag mixed reference styles (e.g., APA-like entries) that deviate from ACM examples, especially missing required fields like venue, pages, and DOI when available.",
+      "pass_criteria": "Reference list matches ACM Reference Format for each entry type.",
+      "exceptions": [
+        "Pre-submission drafts where references are not yet finalized (must be marked)."
+      ],
+      "fix_template": "Regenerate the bibliography using ACM-Reference-Format.bst (BibTeX) or the ACM BibLaTeX setup and correct missing fields."
+    },
+    {
+      "id": "CIT-ACM-003",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "Prefer DOIs over URLs when both exist",
+      "severity": "major",
+      "rationale": "ACM guidance prefers DOIs because URLs are not permanent.",
+      "check": "Flag references that include only a URL when a DOI is known or easily discoverable (common for journal/conference papers).",
+      "pass_criteria": "If a DOI exists, include it; suppress raw URLs unless a distinct URL is required.",
+      "exceptions": [
+        "No DOI exists (web pages, some technical reports).",
+        "A distinct URL is needed in addition to DOI (use distinctURL/archived mechanisms where supported)."
+      ],
+      "fix_template": "Add the DOI field; if needed, keep URL with lastaccessed/archived metadata."
+    },
+    {
+      "id": "CIT-ACM-004",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "For web sources, include access date and archival link when feasible",
+      "severity": "minor",
+      "rationale": "acmart supports lastaccessed and archived fields to mitigate stale links and content drift.",
+      "check": "Flag @online or URL-only references without lastaccessed date; flag missing archived links for unstable web content.",
+      "pass_criteria": "Web resources include lastaccessed and, when available, an archived snapshot link.",
+      "exceptions": [
+        "Stable DOI-resolvable resources.",
+        "Publisher-hosted PDFs with long-term stability guarantees (still optional)."
+      ],
+      "fix_template": "Add lastaccessed = {Month Day, Year} and archived = {Wayback snapshot URL} when possible."
+    },
+    {
+      "id": "CIT-ACM-005",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "ACM prefers full author names (not initials) in references",
+      "severity": "minor",
+      "rationale": "ACM explicitly prefers full names to facilitate indexing and citation linking.",
+      "check": "Flag references where authors are given only as initials when ACM examples show full names.",
+      "pass_criteria": "Author names are listed as full given names where available (BibTeX entries should include them).",
+      "exceptions": [
+        "Authors who publish under initials or have unknown given names.",
+        "Legacy metadata where full names are unavailable."
+      ],
+      "fix_template": "Replace initials with full given names as in ACM examples or ensure the .bib metadata contains full names."
+    },
+    {
+      "id": "CIT-ACM-006",
+      "applies_to": [
+        "ACM"
+      ],
+      "title": "acmart numeric citations are the default; ensure consistency with selected mode",
+      "severity": "minor",
+      "rationale": "acmart supports both numeric and author-year; inconsistent use leads to processing delays.",
+      "check": "Flag mixed citation modes (some [n], some (Author, Year)) in the same manuscript.",
+      "pass_criteria": "Exactly one citation mode is used consistently across the paper.",
+      "exceptions": [
+        "Explicitly permitted hybrid conventions by a specific ACM venue (rare)."
+      ],
+      "fix_template": "Choose either numeric (default) or author-year (\\citestyle{acmauthoryear}) and regenerate the bibliography."
+    }
+  ]
+}

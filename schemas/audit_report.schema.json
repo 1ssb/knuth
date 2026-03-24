@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/audit_report.schema.json",
+  "title": "LLM Audit Report Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "target",
+    "verdict",
+    "findings"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "bundle_id": {
+      "type": "string"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "doc_id",
+        "doc_type"
+      ],
+      "properties": {
+        "doc_id": {
+          "type": "string"
+        },
+        "doc_type": {
+          "type": "string"
+        },
+        "venue_profile": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "summary"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "PASS_WITH_WARNINGS",
+            "FAIL"
+          ]
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule_id",
+          "status",
+          "severity"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "WARN",
+              "SKIP",
+              "UNKNOWN"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "major",
+              "minor",
+              "info"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "suggested_fix": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "doc_id": "paper_under_review_v1",
+  "doc_type": "latex",
+  "venue_profile": "IEEE",
+  "language": "en-US",
+  "strictness": "strict",
+  "requested_rulesets": [
+    "knuth_math_writing",
+    "ieee_acm_citation",
+    "theorem_proof_audit"
+  ]
+}

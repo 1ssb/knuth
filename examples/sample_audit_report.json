@@ -1,0 +1,79 @@
+{
+  "$schema": "schemas/audit_report.schema.json",
+  "schema_version": "1.0.0",
+  "bundle_id": "math_paper_llm_auditor",
+  "target": {
+    "doc_id": "example_paper_v1",
+    "doc_type": "latex",
+    "venue_profile": "IEEE",
+    "language": "en-US"
+  },
+  "run": {
+    "timestamp_utc": "2026-03-24T00:00:00Z",
+    "strictness": "strict",
+    "rulesets": [
+      "knuth_math_writing",
+      "ieee_acm_citation",
+      "theorem_proof_audit"
+    ]
+  },
+  "verdict": {
+    "status": "FAIL",
+    "summary": {
+      "critical_failures": 2,
+      "major_failures": 1,
+      "minor_warnings": 2,
+      "info_notes": 0
+    }
+  },
+  "findings": [
+    {
+      "rule_id": "KMW-001",
+      "status": "FAIL",
+      "severity": "major",
+      "message": "A sentence starts with a bare symbol 'f(x)'",
+      "evidence": [
+        {
+          "snippet": "f(x) is continuous on [0,1].",
+          "location": {
+            "section": "Introduction",
+            "line": 12
+          }
+        }
+      ],
+      "suggested_fix": "Rewrite: 'The function f(x) is continuous on [0,1].'"
+    },
+    {
+      "rule_id": "TPA-002",
+      "status": "FAIL",
+      "severity": "critical",
+      "message": "Quantifier order is ambiguous in the theorem statement; free variable 'x' has no declared domain.",
+      "evidence": [
+        {
+          "snippet": "Theorem. There exists δ>0 such that for all ε>0, ...",
+          "location": {
+            "section": "Main Results",
+            "line": 3
+          }
+        }
+      ],
+      "suggested_fix": "Rewrite with explicit quantifier order and domains (e.g., 'For every ε>0 there exists δ>0 such that ...')."
+    },
+    {
+      "rule_id": "CIT-IEEE-002",
+      "status": "WARN",
+      "severity": "major",
+      "message": "Found phrase 'in reference [3]' in running text; IEEE prefers 'in [3]'.",
+      "evidence": [
+        {
+          "snippet": "As shown in reference [3], the model converges.",
+          "location": {
+            "section": "Related Work",
+            "line": 8
+          }
+        }
+      ],
+      "suggested_fix": "Rewrite to 'As shown in [3], the model converges.'"
+    }
+  ]
+}

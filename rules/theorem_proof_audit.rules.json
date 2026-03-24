@@ -1,0 +1,246 @@
+{
+  "$schema": "schemas/rule_set.schema.json",
+  "schema_version": "1.0.0",
+  "ruleset_id": "theorem_proof_audit",
+  "title": "Strict Theorem-and-Proof Rigor Audit Rules",
+  "description": "Strict rules for mathematical correctness auditing: hypotheses, quantifiers, scope, proof structure, justification, case completeness, and conclusion matching.",
+  "scope": [
+    "theorems",
+    "proofs",
+    "appendices"
+  ],
+  "strictness_levels": [
+    "standard",
+    "strict",
+    "very_strict"
+  ],
+  "default_strictness": "strict",
+  "provenance": {
+    "basis": "Curated engineering rules for formal math auditing; similar in spirit to proof-checking checklists, but aimed at mathematical validity.",
+    "curation_date": "2026-03-24"
+  },
+  "rules": [
+    {
+      "id": "TPA-001",
+      "title": "State all hypotheses explicitly",
+      "severity": "critical",
+      "check": "Flag theorem statements whose conclusions rely on unstated assumptions: topology, boundary conditions, initialization, or parameter ranges.",
+      "pass_criteria": "All assumptions needed by the proof are stated in the theorem/lemma statement, the local setup, or an explicitly inherited standing assumptions block.",
+      "failure_modes": [
+        "Hidden compactness assumption",
+        "Undefined domain of variables",
+        "Regularity used later but absent from the statement"
+      ],
+      "fix_template": "Add the missing assumptions to the theorem statement or explicitly cite standing assumptions."
+    },
+    {
+      "id": "TPA-002",
+      "title": "Quantifiers and domains must be explicit",
+      "severity": "critical",
+      "check": "Flag free variables, ambiguous quantifier order, or missing domains in theorem statements and proof steps.",
+      "pass_criteria": "Every variable is bound or declared, and quantifier order matches the intended claim.",
+      "failure_modes": [
+        "For every/there exists reversal",
+        "x appears with no domain",
+        "Ambiguous big-O quantifiers"
+      ],
+      "fix_template": "Rewrite the statement to make all quantifiers and domains explicit (e.g., “for all x∈X” / “there exists δ>0”)."
+    },
+    {
+      "id": "TPA-003",
+      "title": "No undefined objects inside proofs",
+      "severity": "critical",
+      "check": "Flag objects introduced without definition: operators, norms, measures, constants, or sets.",
+      "pass_criteria": "Each object introduced is defined with enough detail to make subsequent steps checkable.",
+      "failure_modes": [
+        "Using an operator T without specifying its domain/codomain",
+        "Introducing a constant C without stating dependence"
+      ],
+      "fix_template": "Define the object when introduced (domain/codomain/assumptions), or cite where it was defined."
+    },
+    {
+      "id": "TPA-004",
+      "title": "Proof must close exactly the stated claim",
+      "severity": "critical",
+      "check": "Compare the final line of the proof to the theorem claim and flag partial, stronger, weaker, or shifted conclusions.",
+      "pass_criteria": "The proof closes the exact theorem claim under the stated assumptions.",
+      "failure_modes": [
+        "Proof shows a weaker bound",
+        "Only one implication proved",
+        "Special case proved instead of general claim"
+      ],
+      "fix_template": "Either strengthen the proof or weaken the theorem statement to what is actually proved."
+    },
+    {
+      "id": "TPA-005",
+      "title": "Every nontrivial inference step must be justified",
+      "severity": "critical",
+      "check": "Flag leaps using therefore, hence, thus, implies, or 'it follows' where justification is absent and not standard from the immediately preceding line.",
+      "pass_criteria": "Each nontrivial step cites a theorem, lemma, definition, inequality, algebraic manipulation, or clearly checkable argument.",
+      "failure_modes": [
+        "Magic inequality jump",
+        "Exchange of limit and integral with no theorem",
+        "Changing optimization order silently"
+      ],
+      "fix_template": "Add the missing justification or split the leap into smaller verified steps."
+    },
+    {
+      "id": "TPA-006",
+      "title": "Avoid variable capture and scope errors",
+      "severity": "critical",
+      "check": "Flag reuse of the same symbol for different instantiated objects within overlapping scope; flag variables that escape their quantifier scope.",
+      "pass_criteria": "Bound variables remain local; newly instantiated objects get fresh names; reused dummy indices are confined to local formulas.",
+      "failure_modes": [
+        "Using k for two different existentials",
+        "Treating a bound variable as globally fixed",
+        "Dependent choices treated as independent"
+      ],
+      "fix_template": "Rename variables to avoid clashes and restate the instantiation step explicitly."
+    },
+    {
+      "id": "TPA-007",
+      "title": "Existence proofs must not assume the object being proved",
+      "severity": "critical",
+      "check": "Flag “let x be such that …” when the existence of x is the conclusion, not a hypothesis.",
+      "pass_criteria": "Existence is established by construction or by citing an existence theorem; then the object is named.",
+      "failure_modes": [
+        "Circular existence",
+        "Assuming maximizer exists without compactness/coercivity"
+      ],
+      "fix_template": "Either construct the object or cite the theorem that guarantees existence before introducing the symbol."
+    },
+    {
+      "id": "TPA-008",
+      "title": "Case splits must be exhaustive and clearly structured",
+      "severity": "major",
+      "check": "Flag proofs that say “consider cases” without stating all cases or without showing they cover all possibilities.",
+      "pass_criteria": "Cases cover the entire domain and are either disjoint or overlap handled explicitly.",
+      "failure_modes": [
+        "Missing boundary case",
+        "Overlapping cases causing double counting",
+        "Case structure not connected to the goal"
+      ],
+      "fix_template": "List the cases explicitly and add a one-line argument that they cover all possibilities."
+    },
+    {
+      "id": "TPA-009",
+      "title": "Induction proofs must include base case and induction step",
+      "severity": "critical",
+      "check": "Flag induction proofs missing base case(s), missing induction hypothesis, or unclear induction variable domain.",
+      "pass_criteria": "Base case(s) verified; induction hypothesis stated; induction step proved; conclusion applies to intended domain.",
+      "failure_modes": [
+        "Induction starts at wrong n",
+        "Strong induction used without stating range",
+        "Using IH for k+1"
+      ],
+      "fix_template": "Add explicit base case, IH, and step; clarify whether induction is weak/strong and the starting index."
+    },
+    {
+      "id": "TPA-010",
+      "title": "Proof by contradiction must exhibit a clear contradiction",
+      "severity": "major",
+      "check": "Flag contradiction proofs that never state an explicit false statement or that end with 'contradiction' without identifying it.",
+      "pass_criteria": "The negation is assumed; a concrete contradiction (C and not C, or an explicitly false inequality) is derived.",
+      "failure_modes": [
+        "Contradiction is asserted but not shown",
+        "Assumed negation not clearly stated"
+      ],
+      "fix_template": "State the assumed negation explicitly and identify the precise contradictory statements at the end."
+    },
+    {
+      "id": "TPA-011",
+      "title": "Iff / equivalence proofs must prove both directions",
+      "severity": "critical",
+      "check": "Flag claims of equivalence with only one implication proved or the reverse direction missing.",
+      "pass_criteria": "Both P⇒Q and Q⇒P are proved (or an equivalent characterization is established).",
+      "failure_modes": [
+        "Only sufficiency proved",
+        "Only necessity proved"
+      ],
+      "fix_template": "Add the missing direction in a separate paragraph or restructure as two implications."
+    },
+    {
+      "id": "TPA-012",
+      "title": "Avoid 'obvious/clearly/trivial' without explanation",
+      "severity": "minor",
+      "check": "Flag words: obvious, clearly, trivial, immediate, evident when used to replace reasoning.",
+      "pass_criteria": "If such words are used, a short reason follows, or the word is removed.",
+      "exceptions": [
+        "Very standard algebraic step with a cited lemma or definition",
+        "Venue where such phrasing is explicitly acceptable (still discouraged)"
+      ],
+      "fix_template": "Delete the word or add a short justification sentence (1–2 lines)."
+    },
+    {
+      "id": "TPA-013",
+      "title": "Proof should indicate where hypotheses are used",
+      "severity": "minor",
+      "check": "Flag long proofs where assumptions appear in statement but are never referenced or used in reasoning.",
+      "pass_criteria": "Major assumptions are invoked at least once in the proof, or explicitly stated as unused/redundant.",
+      "failure_modes": [
+        "Redundant hypothesis not identified",
+        "Hypothesis used implicitly but never mentioned"
+      ],
+      "fix_template": "Insert a sentence indicating where each key hypothesis is applied, or remove redundant hypotheses."
+    },
+    {
+      "id": "TPA-014",
+      "title": "No silent strengthening/weakening of quantifiers in proof",
+      "severity": "critical",
+      "check": "Flag steps that change “for all” to “for some”, or replace arbitrary element with a special one without justification.",
+      "pass_criteria": "Quantifier changes are explicitly justified (e.g., choose a generic element, then fix it).",
+      "failure_modes": [
+        "Choosing a convenient x without loss justification",
+        "Proving existence for a specific parameter rather than arbitrary"
+      ],
+      "fix_template": "Restate the quantifier structure and ensure the proof introduces elements in the correct order (generic then specific)."
+    },
+    {
+      "id": "TPA-015",
+      "title": "Equality/inequality chains must be logically annotated when nontrivial",
+      "severity": "major",
+      "check": "Flag long chains of equalities/inequalities without stating which theorem or property justifies each step, especially when steps are not algebraic identities.",
+      "pass_criteria": "Nontrivial steps cite the reason (monotonicity, Jensen, triangle inequality, dominated convergence, etc.).",
+      "failure_modes": [
+        "Hidden application of Cauchy-Schwarz",
+        "Measure-theoretic limit step with no condition"
+      ],
+      "fix_template": "Break the chain and annotate each nontrivial transformation with the justification."
+    },
+    {
+      "id": "TPA-016",
+      "title": "Definitions must precede the theorems that use them",
+      "severity": "major",
+      "check": "Flag theorems using a defined term that has not been defined yet in the document order.",
+      "pass_criteria": "All nonstandard terms are defined before first usage in theorem statements; if deferred, a Notation/Preliminaries section is referenced explicitly.",
+      "failure_modes": [
+        "Using 'coercive' without definition/context",
+        "Using 'admissible' without stating admissibility conditions"
+      ],
+      "fix_template": "Move the definition earlier or add a forward reference to the Notation section and ensure it exists."
+    },
+    {
+      "id": "TPA-017",
+      "title": "Uniqueness language requires proof of uniqueness",
+      "severity": "major",
+      "check": "Flag usage of “the solution”, “the minimizer”, “the fixed point” when uniqueness has not been proved.",
+      "pass_criteria": "Use “a” unless uniqueness is established or cited.",
+      "failure_modes": [
+        "Referring to 'the optimal solution' without uniqueness",
+        "Implied uniqueness via notation"
+      ],
+      "fix_template": "Change “the” → “an” or add a uniqueness argument/citation."
+    },
+    {
+      "id": "TPA-018",
+      "title": "Avoid mixing informal commentary into the proof body",
+      "severity": "minor",
+      "check": "Flag paragraphs inside proofs that indicate motivation/handwaving without labeling (e.g., “intuitively”, “we guess”, “it seems”).",
+      "pass_criteria": "Clearly separate rigorous argument from commentary via 'Remark', 'Idea of proof', or explicit labels.",
+      "exceptions": [
+        "Proof sketch sections clearly labeled as sketches."
+      ],
+      "fix_template": "Move commentary into a Remark/Discussion or label it explicitly as a sketch; keep the proof body rigorous."
+    }
+  ]
+}

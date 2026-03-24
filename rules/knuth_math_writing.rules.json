@@ -1,0 +1,268 @@
+{
+  "$schema": "schemas/rule_set.schema.json",
+  "schema_version": "1.0.0",
+  "ruleset_id": "knuth_math_writing",
+  "title": "Knuth Principles for Mathematical Writing (LLM Audit Rules)",
+  "description": "Practical Knuth-style rules for mathematical prose: sentence starts, adjacent formulas, punctuation with displays, symbol introduction and definition, consistent notation, and reader guidance.",
+  "scope": [
+    "math_prose",
+    "latex",
+    "markdown"
+  ],
+  "strictness_levels": [
+    "lenient",
+    "standard",
+    "strict"
+  ],
+  "default_strictness": "standard",
+  "provenance": {
+    "basis": "User-provided distilled Knuth principles attributed to Donald E. Knuth's mathematical writing guidance.",
+    "curation_date": "2026-03-24"
+  },
+  "rules": [
+    {
+      "id": "KMW-001",
+      "title": "Do not start sentences with bare symbols",
+      "severity": "major",
+      "rationale": "Bare symbolic openings are hard to read and sound abrupt in mathematical prose.",
+      "check": "Flag sentences that begin with math tokens, variables, quantifiers (∀,∃), operators, or displayed math unless the symbol is part of a proper noun or numbered item.",
+      "pass_criteria": "The sentence begins with ordinary language that names or describes the mathematical object.",
+      "exceptions": [
+        "Enumerated algorithmic pseudocode lines rather than prose sentences.",
+        "Display-equation lines that are not sentence starts in the surrounding prose."
+      ],
+      "bad_examples": [
+        "f(x) is continuous on [0,1].",
+        "∀x∈X, there exists y∈Y."
+      ],
+      "good_examples": [
+        "The function f(x) is continuous on [0,1].",
+        "For every x in X, there exists y in Y."
+      ],
+      "fix_template": "Rewrite the sentence so it begins with words naming the object or quantifier domain."
+    },
+    {
+      "id": "KMW-002",
+      "title": "Do not place two formulas adjacent without words between",
+      "severity": "major",
+      "rationale": "Adjacent formulas without connective words are difficult to parse and often ambiguous.",
+      "check": "Flag occurrences of consecutive inline math segments (e.g., $f(x)$ $g(x)$) or symbol clusters where a conjunction/preposition is expected.",
+      "pass_criteria": "Between any two formulas that refer to distinct objects, there are connector words (and, or, implies, such that, of, etc.).",
+      "exceptions": [
+        "Explicit multiplication or function composition expressed in a single formula.",
+        "Tuple/vector notation inside one formula."
+      ],
+      "bad_examples": [
+        "Consider f(x) g(x).",
+        "Let A B be sets."
+      ],
+      "good_examples": [
+        "Consider f(x) and g(x).",
+        "Let A and B be sets."
+      ],
+      "fix_template": "Insert a connective word (e.g., “and”, “of”, “with”, “such that”) between the formulas."
+    },
+    {
+      "id": "KMW-003",
+      "title": "Displayed equations must be grammatically integrated and punctuated",
+      "severity": "major",
+      "rationale": "Displayed equations are part of the sentence; missing punctuation breaks grammar and reader flow.",
+      "check": "Flag displayed equations that are followed by no punctuation when the surrounding prose implies continuation, or that use incorrect punctuation (e.g., trailing colon after verb 'is/are').",
+      "pass_criteria": "Displayed equations end with appropriate punctuation (comma/period/semicolon) matching the sentence structure.",
+      "exceptions": [
+        "Standalone display that is not part of a sentence (rare; should be avoided).",
+        "Numbered equation displayed as a label-only line in some templates (still discouraged)."
+      ],
+      "bad_examples": [
+        "We define\n  x = y + 1\nwhere y > 0",
+        "Then\n  f(x)=0\nand hence ..."
+      ],
+      "good_examples": [
+        "We define\n  x = y + 1,\nwhere y > 0.",
+        "Then\n  f(x)=0,\nand hence ..."
+      ],
+      "fix_template": "Add punctuation to the displayed equation (typically a comma or period) so the paragraph reads as a single grammatical sentence."
+    },
+    {
+      "id": "KMW-004",
+      "title": "Define symbols before (or very near) first use",
+      "severity": "critical",
+      "rationale": "Undefined notation causes misinterpretation and makes proofs unverifiable.",
+      "check": "Flag any symbol that appears without a prior definition in the same section or a clearly stated standing assumptions/notation block.",
+      "pass_criteria": "Every nonstandard symbol is defined at first appearance (or immediately before) with domain/type information if relevant.",
+      "exceptions": [
+        "Truly standard constants (0, 1, π, e) and common sets (ℝ, ℕ) if the venue allows unexpanded use.",
+        "Globally defined notation in a dedicated Notation section."
+      ],
+      "bad_examples": [
+        "Let δ = min(δ1, δ2). (δ1, δ2 never defined.)",
+        "Take x ∈ X0. (X0 never defined.)"
+      ],
+      "good_examples": [
+        "Let δ1, δ2 > 0 be given by continuity of f and g at a, and set δ = min(δ1, δ2).",
+        "Let X0 denote the set of feasible solutions defined in (2.1)."
+      ],
+      "fix_template": "Insert a definition sentence/phrase for the symbol (and its domain) at its first use or move the first use to after the definition."
+    },
+    {
+      "id": "KMW-005",
+      "title": "Use consistent notation and do not reuse symbols for different meanings",
+      "severity": "critical",
+      "rationale": "Symbol reuse breaks logical correctness and proof traceability.",
+      "check": "Flag cases where the same symbol is reintroduced with a new meaning, or where multiple symbols denote the same object without explanation.",
+      "pass_criteria": "Each symbol has exactly one meaning in its scope, and each object has one primary notation (with declared synonyms if needed).",
+      "exceptions": [
+        "Standard dummy indices in summations/integrals with clearly local scope.",
+        "Overloaded notation explicitly declared as such (discouraged)."
+      ],
+      "bad_examples": [
+        "Let G be a graph. ... Let G be a group.",
+        "Let n be the sample size. ... Let n be the normal vector."
+      ],
+      "good_examples": [
+        "Let G be a graph. ... Let H be a group.",
+        "Let n be the sample size. ... Let ν be the normal vector."
+      ],
+      "fix_template": "Rename one of the meanings (choose a new symbol) and propagate consistently through the relevant scope."
+    },
+    {
+      "id": "KMW-006",
+      "title": "Avoid long unconnected sequences of formulas",
+      "severity": "major",
+      "rationale": "Listing formulas without explanatory prose resembles homework and obscures the argument.",
+      "check": "Flag paragraphs with multiple consecutive sentences that are primarily formulas or equation transformations with no explanatory link words.",
+      "pass_criteria": "Formulas are tied together by prose explaining the goal and the reason for each transformation.",
+      "exceptions": [
+        "A short chain of equalities/inequalities with an explicit stated reason.",
+        "Algorithmic derivations where each line is annotated by a justification."
+      ],
+      "bad_examples": [
+        "x=... \ny=... \nz=..."
+      ],
+      "good_examples": [
+        "Starting from x=..., we substitute into the definition of y to obtain y=.... Finally, applying Lemma 2 yields z=...."
+      ],
+      "fix_template": "Insert short prose between formulas indicating the reason (definition, substitution, lemma) and the intermediate goal."
+    },
+    {
+      "id": "KMW-007",
+      "title": "Prefer words over nonstandard symbolic logic in running text",
+      "severity": "minor",
+      "rationale": "Symbols like ∀, ∃, ⇒ are easy to misread in prose and reduce accessibility.",
+      "check": "Flag ∀, ∃, ⇒, ⇔, s.t., w.r.t., iff in prose sentences outside formal logic contexts.",
+      "pass_criteria": "Quantifiers and implications are written in words when embedded in prose.",
+      "exceptions": [
+        "Works explicitly about formal logic where symbols are the subject matter.",
+        "Short summary tables of logical forms (not prose)."
+      ],
+      "bad_examples": [
+        "∀ε>0 ∃δ>0 s.t. ...",
+        "A⇒B⇒C."
+      ],
+      "good_examples": [
+        "For every ε>0 there exists δ>0 such that ...",
+        "We show that A implies B and B implies C."
+      ],
+      "fix_template": "Replace symbolic quantifiers/implications with words in prose; keep symbols inside a displayed formula if needed."
+    },
+    {
+      "id": "KMW-008",
+      "title": "Keep the reader oriented about goals and structure",
+      "severity": "minor",
+      "rationale": "Readers need reminders of what is being proved and why steps are taken.",
+      "check": "Flag long proof stretches (>10 lines/paragraphs) without a stated local goal or without referencing the theorem statement.",
+      "pass_criteria": "Proof includes goal statements at major transitions (e.g., “It remains to show…”, “We now prove…”).",
+      "exceptions": [
+        "Very short proofs where the goal is obvious from immediate context.",
+        "Highly routine calculations with explicit displayed derivations."
+      ],
+      "bad_examples": [
+        "Several paragraphs of computation with no statement of what is being established."
+      ],
+      "good_examples": [
+        "To conclude the theorem, it suffices to show that the error term tends to zero."
+      ],
+      "fix_template": "Add a one-sentence roadmap at transition points describing the subgoal and how it connects to the main claim."
+    },
+    {
+      "id": "KMW-009",
+      "title": "Use complete English sentences around math",
+      "severity": "minor",
+      "rationale": "Sentence fragments around formulas introduce ambiguity and grammatical breaks.",
+      "check": "Flag fragments like “Since …” followed by a display with no main verb, or displays introduced by incorrect punctuation (e.g., random colon).",
+      "pass_criteria": "Each paragraph reads as grammatical English when formulas are read aloud.",
+      "exceptions": [
+        "Bulleted lists explicitly labeled as fragments.",
+        "Caption-style text in figures/tables."
+      ],
+      "bad_examples": [
+        "Since x>0.\n  x^2>0.",
+        "If C and P are subsets of N^n, let:\n  L(C,P)=..."
+      ],
+      "good_examples": [
+        "Since x>0, we have x^2>0.",
+        "If C and P are subsets of N^n, let L(C,P) denote ..."
+      ],
+      "fix_template": "Rewrite fragments into full sentences; adjust punctuation so the display is a grammatical clause of the sentence."
+    },
+    {
+      "id": "KMW-010",
+      "title": "Capitalize 'Theorem', 'Lemma', etc. when used as labeled nouns",
+      "severity": "info",
+      "rationale": "Consistent capitalization improves professional readability and aligns with many editorial norms.",
+      "check": "Flag patterns like “theorem 2”or “lemma 5” when they refer to a labeled result.",
+      "pass_criteria": "Use “Theorem 2”, “Lemma 5”, “Proposition 3.1” when referring to numbered items.",
+      "exceptions": [
+        "Generic usage: “a theorem of algebra” is not capitalized."
+      ],
+      "bad_examples": [
+        "As shown in theorem 2, ...",
+        "lemma 5 implies ..."
+      ],
+      "good_examples": [
+        "As shown in Theorem 2, ...",
+        "Lemma 5 implies ..."
+      ],
+      "fix_template": "Capitalize the noun when it refers to a labeled result (Theorem/Lemma/Proposition/Corollary/Definition)."
+    },
+    {
+      "id": "KMW-011",
+      "title": "Avoid gratuitous colons before displays",
+      "severity": "minor",
+      "rationale": "Colons are often misused before displayed equations and can create ungrammatical sentences.",
+      "check": "Flag occurrences like “We have:” or “Let:” immediately before a display when the display merely completes the clause.",
+      "pass_criteria": "Use a colon only when introducing a list or explanation; otherwise treat the display as a continuation without punctuation after forms of 'to be'.",
+      "exceptions": [
+        "Legitimate list introductions: “as follows:” followed by a list of items.",
+        "Algorithm blocks introduced by “Algorithm:” in some venues."
+      ],
+      "bad_examples": [
+        "We have:\n  x = y + 1.",
+        "If C and P are subsets of N^n, let:\n  L(C,P)=..."
+      ],
+      "good_examples": [
+        "We have\n  x = y + 1.",
+        "If C and P are subsets of N^n, let L(C,P) be defined by\n  L(C,P)=..."
+      ],
+      "fix_template": "Remove the colon and rewrite so the displayed equation completes a grammatical sentence."
+    },
+    {
+      "id": "KMW-012",
+      "title": "Minimize symbol-heavy prose when words are clearer",
+      "severity": "info",
+      "rationale": "Symbol-dense prose is cognitively expensive and increases scope ambiguity.",
+      "check": "Flag passages with many quantifier/logic symbols in running text outside displayed formulas.",
+      "pass_criteria": "Use words for quantifiers and logical connectors in prose; reserve dense notation for displays.",
+      "exceptions": [
+        "Formal logic, proof theory, or papers where symbolic logic is the object of study."
+      ],
+      "bad_examples": [
+        "∀ε>0 ∃δ>0: |x-a|<δ ⇒ |f(x)-f(a)|<ε."
+      ],
+      "good_examples": [
+        "For every ε>0 there exists δ>0 such that if |x-a|<δ then |f(x)-f(a)|<ε."
+      ],
+      "fix_template": "Move the dense symbolic statement into a display or rewrite it in words in running text."
+    }
+  ]
+}
